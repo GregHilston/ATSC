@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # Reference: http://stackoverflow.com/questions/9004135/merge-multiple-xml-files-from-command-line
+'''
+Script used to combine multiple .rbbx files into one, allowing human interaction with many .rbbx files to be quicker
+'''
 
 import sys
 import fileinput
+import time
 from xml.etree import ElementTree
 
-__author__ = 'Tyler_And_Greg'
+__author__ = 'Tyler_And_Greg' # Best ever
 combined_files_limit = 3  # Number of students should be this number * 75
-
+DEBUG_MODE = 0
 
 '''
 As it stands, blackboard has a limitation of a student size xml file (Which is referred to as .rbbx files) of 400.
@@ -30,6 +34,13 @@ def combine(files):
     file_counter = 0  # What .rbbx file we are currently on
     first = None  # Our ElementTree
 
+    # Printing input files
+    if DEBUG_MODE:
+        print "BEGIN printing filename"
+        for filename in files:
+            print "\t" + filename
+        print "END printing filename\n"
+    
     for filename in files:
         data = ElementTree.parse(filename).getroot()
 
@@ -38,9 +49,12 @@ def combine(files):
         else:
             first.extend(data)
 
-        #  Decide what file to write to
-        file = open(('combined' + str(file_counter / combined_files_limit) + '.rbbx'), 'w+')
-
+        #  Writing to file
+        modified_filename = filename.rsplit('\\', 1)[1] # Remove the file path
+        modified_filename = " Combine " + modified_filename.split(" (")[0] # Remove the student numbering
+        
+        file = open((str(file_counter / combined_files_limit) + modified_filename + '.rbbx'), 'w+')
+        
         file.write(ElementTree.tostring(first))
         file.close()
         file_counter += 1
@@ -49,9 +63,16 @@ def combine(files):
             combined_counter += 1
             first = None # Empties the element tree, as we would push over 400 students
 
-    for i in range(combined_counter):  # + 1 for 0 based
-        remove_ns0("combined" + str(i) + ".rbbx")
+    for i in range(combined_counter):
+        remove_ns0(str(i) + modified_filename + ".rbbx")
 
 
 if  __name__ =='__main__':
-    combine(sys.argv[1:])
+    if DEBUG_MODE:
+        # Printing all arguements passed in
+        print "len(sys.argv): " + str(len(sys.argv))
+        for arg in sys.argv:
+            print "\t" + arg
+        print "\n"
+        
+    combine(sys.argv[1:]) # -2: 1 for the filename of this script, 2 for the weird .rbbx0 passed by windows
