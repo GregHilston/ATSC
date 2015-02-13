@@ -11,7 +11,7 @@ from xml.etree import ElementTree
 
 __author__ = 'Tyler_And_Greg' # Best ever
 combined_files_limit = 3  # Number of students should be this number * 75
-DEBUG_MODE = 0
+DEBUG_MODE = 1
 
 '''
 As it stands, blackboard has a limitation of a student size xml file (Which is referred to as .rbbx files) of 400.
@@ -30,16 +30,10 @@ def remove_ns0(file):
 
 # Given any number of .rbbx files, combines up to five .rbbx files into one, resulting in files of 375 students or less
 def combine(files):
-    combined_counter = 0
-    file_counter = 0  # What .rbbx file we are currently on
-    first = None  # Our ElementTree
-
-    # Printing input files
-    if DEBUG_MODE:
-        print "BEGIN printing filename"
-        for filename in files:
-            print "\t" + filename
-        print "END printing filename\n"
+    combined_counter = 1 # Number of combined files being created or about to be created
+    file_counter = 0 # What .rbbx file we are currently on
+    first = None # Our ElementTree
+    combined_filenames = set() # To keep only unique filenames
     
     for filename in files:
         data = ElementTree.parse(filename).getroot()
@@ -51,20 +45,32 @@ def combine(files):
 
         #  Writing to file
         modified_filename = filename.rsplit('\\', 1)[1] # Remove the file path
-        modified_filename = " Combine " + modified_filename.split(" (")[0] # Remove the student numbering
+        modified_filename = modified_filename.split(" (")[0] + ".rbbx" # Remove the student numbering
+        modified_filename = str(combined_counter) + "_" + modified_filename # To differentiate multiple files 
         
-        file = open((str(file_counter / combined_files_limit) + modified_filename + '.rbbx'), 'w+')
+        if DEBUG_MODE:
+            print "modified_filename: " + modified_filename
+        
+        file = open((modified_filename), 'w+')
         
         file.write(ElementTree.tostring(first))
         file.close()
         file_counter += 1
 
         if file_counter % combined_files_limit == 0:
+            combined_filenames.add(modified_filename) # Done with this file, so add it to our list
             combined_counter += 1
             first = None # Empties the element tree, as we would push over 400 students
+            
+    combined_filenames.add(modified_filename) # Adds the last file, set ensures uniqueness
 
-    for i in range(combined_counter):
-        remove_ns0(str(i) + modified_filename + ".rbbx")
+    
+    print "combined_counter: " + str(combined_counter)
+    for file in combined_filenames:
+        if DEBUG_MODE:
+            print "\tPassing to remove_ns0: " + file
+            
+        remove_ns0(file)
 
 
 if  __name__ =='__main__':
@@ -73,6 +79,5 @@ if  __name__ =='__main__':
         print "len(sys.argv): " + str(len(sys.argv))
         for arg in sys.argv:
             print "\t" + arg
-        print "\n"
         
     combine(sys.argv[1:]) # -2: 1 for the filename of this script, 2 for the weird .rbbx0 passed by windows
